@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Created on Jul 17, 2012
 
@@ -13,6 +14,7 @@ import uuid
 import renren
 import sys
 import getpass
+import subprocess
 
 _cookieJar = cookielib.CookieJar()
 _homeURL = 'http://www.renren.com/'
@@ -21,25 +23,26 @@ _pingURL = 'http://s.renren.com/ping?v=20110919'
 _captchaURL = 'http://icode.renren.com/getcode.do?t=web_login&rnd=331'
 _showcaptchaURL = 'http://www.renren.com/ajax/ShowCaptcha'
 _uaHeaders = [('User-agent', 'Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US) AppleWebKit/535.12 (KHTML, like Gecko) Chrome/18.0.966.0 Safari/535.12')]
+_timeout = 10
 
 _normalOpener = urllib2.build_opener(urllib2.HTTPCookieProcessor(_cookieJar))
 _normalOpener.addheaders = _uaHeaders
 
 def touch(url):
 	req = urllib2.Request(url, None)
-	resp = _normalOpener.open(req,timeout=5)
+	resp = _normalOpener.open(req,timeout=_timeout)
 	resp.close()
 
 def fetch(url,encoding='UTF-8'):
 	req = urllib2.Request(url,None)
-	resp = _normalOpener.open(req,timeout=5)
+	resp = _normalOpener.open(req,timeout=_timeout)
 	s = resp.read().decode(encoding)
 	resp.close()
 	return s
 
 def fetchBin(url,filename,folder):
 	req = urllib2.Request(url,None)
-	resp = _normalOpener.open(req,timeout =5)
+	resp = _normalOpener.open(req,timeout=_timeout)
 	path = os.path.join(folder,filename)
 	f = open(path,'wb')
 	f.write(resp.read())
@@ -62,7 +65,7 @@ def login(email,password,captcha):
 
 	req = urllib2.Request(_loginURL, postBody)
 
-	resp = _normalOpener.open(req,timeout =5)
+	resp = _normalOpener.open(req,timeout=_timeout)
 
 	loginResult = resp.read()
 	print loginResult.decode('UTF-8')
@@ -85,7 +88,7 @@ def save(url,filename,folder,overwrite):
 		print url, 'skip'
 		return True
 	try:
-		pic = urllib2.urlopen(url,timeout=5)
+		pic = urllib2.urlopen(url,timeout=_timeout)
 		print url, pic.getcode()
 		f = open(path,'wb')
 		f.write(pic.read())
@@ -176,6 +179,8 @@ if __name__ == '__main__':
 	=================================================
 	''')
 	success = False
+
+	## Login Part.
 	while not success:
 		try:
 			username = safe_raw_input('Your RenRen Account (Email):')
@@ -200,13 +205,20 @@ if __name__ == '__main__':
 
 			req = urllib2.Request(_showcaptchaURL, postBody)
 
-			resp = _normalOpener.open(req,timeout =5)
+			resp = _normalOpener.open(req,timeout=_timeout)
 
 			result = resp.read()
 			print result.decode('UTF-8')
 			resp.close()
 
+			filepath = "captcha.jpg"
 
+			if sys.platform.startswith('darwin'):
+				subprocess.call(('open', filepath))
+			elif os.name == 'nt':
+				os.startfile(filepath)
+			elif os.name == 'posix':
+				subprocess.call(('xdg-open', filepath))
 
 			captcha = safe_raw_input('Captcha(check your captcha.jpg):')
 
@@ -222,6 +234,7 @@ if __name__ == '__main__':
 	c = True
 	while c:
 		try:
+			##Polling Query.
 			c = round()
 		except Exception as e:
 			print 'Unknown Exception(Network? Permission?):',e
